@@ -2,7 +2,7 @@ import pandas as pd
 from itertools import combinations
 from collections import defaultdict
 
-file_path = r"C:\Users\arqam\PycharmProjects\ECLAT_PROJECT\Horizontal_Format.xlsx"
+file_path = "Horizontal_Format.xlsx"
 # Step 1: Read Transactions Table from Excel
 def read_transactions_from_excel(file_path):
     df = pd.read_excel(file_path)
