@@ -1,19 +1,17 @@
 import pandas as pd
 from itertools import combinations
 from collections import defaultdict
+import tkinter as tk
+from tkinter import filedialog, messagebox
 
-file_path = r"C:\Users\arqam\PycharmProjects\ECLAT_PROJECT\Horizontal_Format.xlsx"
-# Step 1: Read Transactions Table from Excel
+# Function to read transactions from an Excel file
 def read_transactions_from_excel(file_path):
     df = pd.read_excel(file_path)
     transactions = df.values.tolist()
     transactions = [[item for item in row if pd.notna(item)] for row in transactions]
-    print("Transactions are: ")
-    print(transactions)
-
     return transactions
 
-# Step 2: Convert Data to Vertical Format
+# Convert data to vertical format
 def convert_to_vertical_format(transactions):
     vertical_data = defaultdict(set)
     for tid, transaction in enumerate(transactions):
@@ -21,11 +19,9 @@ def convert_to_vertical_format(transactions):
             items = item.split(',') if isinstance(item, str) else [item]
             for individual_item in items:
                 vertical_data[individual_item].add(tid)
-    print("Vertical format is: ")
-    print(vertical_data)
     return vertical_data
 
-# Step 3: Generate Frequent Itemsets
+# Generate frequent itemsets
 def generate_frequent_itemsets(vertical_data, min_support):
     frequent_itemsets = []
     items = list(vertical_data.keys())
@@ -39,7 +35,7 @@ def generate_frequent_itemsets(vertical_data, min_support):
                 frequent_itemsets.append((candidate, support))
     return frequent_itemsets
 
-# Step 4: Generate Association Rules
+# Generate association rules
 def generate_association_rules(frequent_itemsets, min_confidence):
     rules = []
     for itemset, support in frequent_itemsets:
@@ -55,7 +51,7 @@ def generate_association_rules(frequent_itemsets, min_confidence):
                         rules.append((antecedent, consequent, confidence))
     return rules
 
-# Step 5: Calculate Lift
+# Calculate lift
 def calculate_lift(rules, frequent_itemsets, total_transactions):
     lifts = []
     for antecedent, consequent, confidence in rules:
@@ -75,15 +71,73 @@ def run_eclat(file_path, min_support, min_confidence):
     rules = generate_association_rules(frequent_itemsets, min_confidence)
     lifts = calculate_lift(rules, frequent_itemsets, total_transactions)
 
-    print("Frequent Itemsets:")
+    result_text = ""
+    result_text += "Frequent Itemsets:\n"
     for itemset, support in frequent_itemsets:
-        print(f"Itemset: {itemset}, Support: {support}")
+        result_text += f"Itemset: {itemset}, Support: {support}\n"
 
-    print("\nStrong Association Rules:")
+    result_text += "\nStrong Association Rules:\n"
     for antecedent, consequent, confidence, lift in lifts:
-        print(f"Rule: {antecedent} -> {consequent}, Confidence: {confidence:.2f}, Lift: {lift:.2f}")
+        result_text += f"Rule: {antecedent} -> {consequent}, Confidence: {confidence:.2f}, Lift: {lift:.2f}\n"
 
-# Example Usage
-min_support = 2
-min_confidence = 0.5
-run_eclat(file_path, min_support, min_confidence)
+    return result_text
+
+# Tkinter GUI for ECLAT
+class EclatGUI(tk.Tk):
+    def __init__(self):
+        super().__init__()
+
+        self.title("ECLAT Algorithm GUI")
+        self.geometry("600x400")
+
+        # File selection
+        self.file_path = ""
+        self.file_button = tk.Button(self, text="Choose Excel File", command=self.choose_file)
+        self.file_button.pack(pady=10)
+
+        # Min support input
+        self.min_support_label = tk.Label(self, text="Enter Min Support:")
+        self.min_support_label.pack()
+        self.min_support_entry = tk.Entry(self)
+        self.min_support_entry.pack(pady=5)
+
+        # Min confidence input
+        self.min_confidence_label = tk.Label(self, text="Enter Min Confidence:")
+        self.min_confidence_label.pack()
+        self.min_confidence_entry = tk.Entry(self)
+        self.min_confidence_entry.pack(pady=5)
+
+        # Run button
+        self.run_button = tk.Button(self, text="Run ECLAT", command=self.run_eclat)
+        self.run_button.pack(pady=20)
+
+        # Result Text Box
+        self.result_text = tk.Text(self, height=10, width=70)
+        self.result_text.pack(pady=10)
+
+    def choose_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx;*.xls")])
+        if file_path:
+            self.file_path = file_path
+
+    def run_eclat(self):
+        # Get min_support and min_confidence values
+        try:
+            min_support = int(self.min_support_entry.get())
+            min_confidence = float(self.min_confidence_entry.get())
+
+            if not self.file_path:
+                raise ValueError("Please choose a file.")
+
+            # Run the ECLAT algorithm
+            result = run_eclat(self.file_path, min_support, min_confidence)
+            self.result_text.delete(1.0, tk.END)  # Clear the text box
+            self.result_text.insert(tk.END, result)  # Display the result
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Error: {e}")
+
+# Running the Tkinter Application
+if __name__ == "__main__":
+    app = EclatGUI()
+    app.mainloop()
