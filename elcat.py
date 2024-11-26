@@ -41,48 +41,61 @@ def generate_frequent_itemsets(vertical_data, min_support):  #takes the dictiona
     return frequent_itemsets
 
 # Step 4: Generate Association Rules
-def generate_association_rules(frequent_itemsets, min_confidence):
-    rules = []
+def generate_association_rules(frequent_itemsets, min_confidence): # Generate association rules from a list of frequent itemsets based on a minimum confidence threshold.
+    generated_rules = [] # Initialize an empty list to store the generated rules
     for itemset, support in frequent_itemsets:
         if len(itemset) > 1:
             for i in range(1, len(itemset)):
                 for antecedent in combinations(itemset, i):
                     consequent = tuple(set(itemset) - set(antecedent))
+                    # Find the support of the current antecedent
                     antecedent_support = next(
-                        (sup for items, sup in frequent_itemsets if set(items) == set(antecedent)), 0
+                        (sup for items, sup in frequent_itemsets if set(items) == set(antecedent)), 0  # Default to 0 if not found
                     )
-                    confidence = support / antecedent_support if antecedent_support > 0 else 0
+                    # Calculate the confidence of the rule
+                     if antecedent_support > 0:
+                        confidence = support / antecedent_support
+                    else:
+                        confidence = 0
                     if confidence >= min_confidence:
-                        rules.append((antecedent, consequent, confidence))
-    return rules
+                        generated_rules.append((antecedent, consequent, confidence))
+    return generated_rules # Return the list of generated rules
 
 # Step 5: Calculate Lift
-def calculate_lift(rules, frequent_itemsets, total_transactions):
-    lifts = []
-    for antecedent, consequent, confidence in rules:
+def calculate_lift(generated_rules, frequent_itemsets, total_transactions): # Calculate the lift for each rule in the generated rules list.
+    lift_values = []  # Initialize an empty list to store the lift values for each rule
+    for antecedent, consequent, confidence in generated_rules:
+        # Find the support for the consequent itemset
         consequent_support = next(
             (sup for items, sup in frequent_itemsets if set(items) == set(consequent)), 0
         )
-        lift = confidence / (consequent_support / total_transactions)
-        lifts.append((antecedent, consequent, confidence, lift))
-    return lifts
+        # Calculating the lift
+        if consequent_support > 0:
+            lift = confidence / (consequent_support / total_txns)
+        else:
+            lift = 0
+        lift_values.append((antecedent, consequent, confidence, lift))  # Append the rule along with its lift value to the lifts list
+    return lift_values  # Return the list of rules with their corresponding lift values
 
 # Running the ECLAT Algorithm
-def run_eclat(file_path, min_support, min_confidence):
-    transactions = read_file(file_path)
-    total_transactions = len(transactions)
-    vertical_data = convert_to_vertical(transactions)
-    frequent_itemsets = generate_frequent_itemsets(vertical_data, min_support)
-    rules = generate_association_rules(frequent_itemsets, min_confidence)
-    lifts = calculate_lift(rules, frequent_itemsets, total_transactions)
+def run_eclat(file_path, min_support, min_confidence): # Execute the ECLAT algorithm to find frequent itemsets and generate association rules.
+    transactions = read_file(file_path) # Read transactions from the input file
+    total_transactions = len(transactions) # Calculate the total number of transactions
+    vertical_data = convert_to_vertical(transactions) # Convert the transaction data into a vertical format for ECLAT processing
+    frequent_itemsets = generate_frequent_itemsets(vertical_data, min_support)  # Generate frequent itemsets using the ECLAT algorithm
+    rules = generate_association_rules(frequent_itemsets, min_confidence) # Generate strong association rules from the frequent itemsets
+    lifts = calculate_lift(rules, frequent_itemsets, total_transactions) # Calculate the lift for each generated rule
 
+     # Display the results
     print("Frequent Itemsets:")
     print(f"\nTotal Frequent Itemsets: {len(frequent_itemsets)}")
+     # Print each frequent itemset and its support
     for itemset, support in frequent_itemsets:
         print(f"Itemset: {itemset}, Support: {support}")
-
+# Print the total number of strong association rules generated
     print("\nStrong Association Rules:")
     print(f"\nTotal: {len(lifts)}")
+     # Print each rule with its confidence and lift values
     for antecedent, consequent, confidence, lift in lifts:
         print(f"Rule: {antecedent} -> {consequent}, Confidence: {confidence:.2f}, Lift: {lift:.2f}")
 
